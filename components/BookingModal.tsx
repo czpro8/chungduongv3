@@ -1,0 +1,195 @@
+
+import React, { useState, useEffect } from 'react';
+import { X, Phone, User, MapPin, Users, CreditCard, AlertCircle, CheckCircle2, Sparkles, Info } from 'lucide-react';
+import { Trip, Profile } from '../types';
+import { supabase } from '../lib/supabase';
+import CopyableCode from './CopyableCode';
+
+interface BookingModalProps {
+  trip: Trip;
+  profile: Profile | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (data: { phone: string; seats: number; note: string }) => void;
+}
+
+const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onClose, onConfirm }) => {
+  const [phone, setPhone] = useState('');
+  const [seats, setSeats] = useState(1);
+  const [note, setNote] = useState('');
+  const [error, setError] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && profile) {
+      setPhone(profile.phone || '');
+    }
+  }, [isOpen, profile]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (phone.length < 10) {
+      setError('Số điện thoại không hợp lệ');
+      return;
+    }
+    
+    onConfirm({ phone, seats, note });
+    onClose();
+  };
+
+  const tripCode = `T${trip.id.substring(0, 5).toUpperCase()}`;
+  const isWaitingList = trip.available_seats <= 0;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-visible animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 relative">
+        {/* Nút đóng Floating Red Button */}
+        <button 
+          onClick={onClose} 
+          className="absolute -top-4 -right-4 w-11 h-11 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 hover:rotate-90 hover:bg-rose-600 transition-all duration-300 z-[110] border-2 border-white"
+        >
+          <X size={20} strokeWidth={3} />
+        </button>
+
+        <div className={`p-6 ${isWaitingList ? 'bg-rose-600' : 'bg-emerald-600'} text-white rounded-t-[32px] flex justify-between items-center`}>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold italic tracking-tight font-outfit">
+                {isWaitingList ? 'Đặt chỗ dự phòng' : 'Xác nhận đặt chỗ'}
+              </h3>
+              <CopyableCode 
+                code={tripCode} 
+                className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black text-white"
+              />
+            </div>
+            <p className="text-emerald-100 text-xs mt-0.5 font-bold">
+              {isWaitingList ? 'Xe đã hết ghế, bạn sẽ ở hàng đợi dự phòng' : 'Vui lòng cung cấp thông tin liên hệ'}
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {isWaitingList && (
+            <div className="p-3 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600">
+              <Info size={16} className="shrink-0" />
+              <p className="text-[10px] font-bold leading-tight uppercase">
+                Chuyến xe đã hết ghế trống. Bạn vẫn có thể đặt chỗ, tài xế sẽ ưu tiên liên hệ nếu có khách hủy.
+              </p>
+            </div>
+          )}
+
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+                {trip.driver_name?.charAt(0) || 'T'}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-400">Tài xế</p>
+                <p className="text-sm font-bold text-slate-800 font-outfit">{trip.driver_name}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-bold text-slate-400">Giá/ghế</p>
+              <p className="text-lg font-black text-emerald-600 font-outfit">{new Intl.NumberFormat('vi-VN').format(trip.price)}đ</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-1.5 ml-1">
+                <label className="text-xs font-bold text-slate-400">Điện thoại liên hệ</label>
+                {profile?.phone && phone === profile.phone && (
+                   <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
+                     <CheckCircle2 size={10} /> Đã lấy từ hồ sơ
+                   </span>
+                )}
+              </div>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Nhập số điện thoại..."
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700 transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">Số lượng ghế</label>
+                <div className="relative">
+                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <select 
+                    value={seats}
+                    onChange={(e) => setSeats(parseInt(e.target.value))}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700 appearance-none transition-all"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                      <option key={s} value={s}>{s} ghế</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex flex-col justify-end">
+                <div className={`border p-2 rounded-2xl flex items-center gap-2 ${isWaitingList ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                  {isWaitingList ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+                  <span className="text-[11px] font-bold">
+                    {isWaitingList ? 'Đang đợi dự phòng' : `Còn ${trip.available_seats} ghế`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">Ghi chú đón/trả</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-4 text-slate-400" size={18} />
+                <textarea 
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Ví dụ: Đón tôi trước cổng khu đô thị..."
+                  rows={3}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm text-slate-700 transition-all resize-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 text-rose-600 text-xs font-bold">
+              <AlertCircle size={14} />
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-4 bg-slate-50 text-slate-500 font-bold rounded-2xl hover:bg-slate-100 transition-all font-outfit"
+            >
+              Hủy bỏ
+            </button>
+            <button 
+              type="submit"
+              disabled={isUpdatingProfile}
+              className={`flex-[2] py-4 text-white font-bold rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 font-outfit ${isWaitingList ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-100' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100'}`}
+            >
+              <CreditCard size={18} />
+              {isUpdatingProfile ? 'Đang lưu...' : (isWaitingList ? 'Xếp hàng dự phòng' : `Đặt ngay ${new Intl.NumberFormat('vi-VN').format(trip.price * seats)}đ`)}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default BookingModal;
