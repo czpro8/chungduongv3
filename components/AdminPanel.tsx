@@ -120,7 +120,6 @@ const AdminPanel: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Truy vấn profiles kèm cột created_at (Cần đảm bảo trong DB profiles có cột này)
       const { data: profiles, error: profileError } = await supabase.from('profiles').select('*').order('full_name', { ascending: true });
       if (profileError) throw profileError;
 
@@ -131,7 +130,6 @@ const AdminPanel: React.FC = () => {
         const userTrips = trips?.filter(t => t.driver_id === p.id) || [];
         const userBookings = bookings?.filter(b => b.passenger_id === p.id) || [];
         
-        // Tính toán hoạt động gần nhất
         const lastTripAt = userTrips[0]?.created_at;
         const lastBookingAt = userBookings[0]?.created_at;
         
@@ -258,7 +256,7 @@ const AdminPanel: React.FC = () => {
           <table className="w-full text-left table-fixed min-w-[1300px]">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <SortHeader label="Mã & Thành viên" sortKey="full_name" width="20%" />
+                <SortHeader label="Thành viên & Mã" sortKey="full_name" width="20%" />
                 <SortHeader label="Ngày tham gia" sortKey="created_at" width="12%" />
                 <SortHeader label="Liên hệ" sortKey="phone" width="16%" />
                 <SortHeader label="Chuyến đi" sortKey="trips_count" width="10%" textAlign="text-center" />
@@ -281,7 +279,6 @@ const AdminPanel: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-xl bg-white flex items-center justify-center text-slate-500 font-bold text-[11px] shrink-0 border border-slate-100 shadow-sm uppercase">{user.full_name?.charAt(0) || '?'}</div>
                         <div className="min-w-0 flex-1">
-                          <CopyableCode code={userCode} className="text-[9px] font-black text-indigo-400 mb-0.5" />
                           {isEditing ? (
                             <input 
                               type="text" 
@@ -290,8 +287,11 @@ const AdminPanel: React.FC = () => {
                               className="w-full px-2 py-1 text-[12px] font-bold border border-indigo-200 rounded outline-none focus:ring-1 focus:ring-indigo-400 bg-white"
                             />
                           ) : (
-                            <p className="text-[12px] font-bold text-slate-800 truncate">{user.full_name}</p>
+                            <p className="text-[12px] font-bold text-slate-800 truncate mb-1">{user.full_name}</p>
                           )}
+                          <div className="inline-flex items-center bg-[#7B68EE10] text-[#7B68EE] px-2 py-0.5 rounded-md border border-[#7B68EE30] shadow-sm">
+                            <CopyableCode code={userCode} className="text-[9px] font-black" label={userCode} />
+                          </div>
                         </div>
                       </div>
                     </td>

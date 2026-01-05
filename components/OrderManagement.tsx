@@ -102,15 +102,6 @@ interface OrderManagementProps {
 
 type SortConfig = { key: string; direction: 'asc' | 'desc' | null };
 
-const parseRouteInfo = (address: string) => {
-  if (!address) return { huyen: '', tinh: '' };
-  const parts = address.split(',').map(p => p.trim());
-  const clean = (str: string) => str.replace(/^(Huyện|Quận|Xã|Thị trấn|Thị xã|Thành phố|Tp\.)\s+/i, '').trim();
-  const tinhRaw = parts[parts.length - 1] || '';
-  const huyenRaw = parts[parts.length - 2] || tinhRaw;
-  return { huyen: clean(huyenRaw), tinh: clean(tinhRaw) };
-};
-
 const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRefresh }) => {
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +126,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
     if (!profile) return;
     setLoading(true);
     try {
-      let query = supabase.from('bookings').select(`*, trips(*, driver_profile:profiles(full_name, phone)), profiles:passenger_id(full_name, phone)`);
+      let query = supabase.from('bookings').select(`*, trips(*, driver_profile:profiles(id, full_name, phone)), profiles:passenger_id(id, full_name, phone)`);
       if (profile.role === 'driver') {
         const { data: myTrips } = await supabase.from('trips').select('id').eq('driver_id', profile.id);
         const myTripIds = myTrips?.map(t => t.id) || [];
@@ -169,6 +160,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
       const createdAt = new Date(order.created_at);
       
       const bookingCode = `S${order.id.substring(0, 5).toUpperCase()}`;
+      const tripCode = trip?.trip_code || (trip?.id ? `T${trip.id.substring(0, 5).toUpperCase()}` : '');
       const passengerName = order.profiles?.full_name || '';
       const driverName = trip?.driver_profile?.full_name || '';
       const route = `${trip?.origin_name} ${trip?.dest_name}`;
@@ -176,6 +168,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
                             removeAccents(passengerName).includes(searchNormalized) || 
                             removeAccents(driverName).includes(searchNormalized) || 
                             removeAccents(bookingCode).includes(searchNormalized) || 
+                            removeAccents(tripCode).includes(searchNormalized) || 
                             removeAccents(route).includes(searchNormalized);
       
       const matchesStatus = statusFilter.includes('ALL') || statusFilter.includes(order.status);
@@ -228,7 +221,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
   };
 
   const SortHeader = ({ label, sortKey, width, textAlign = 'text-left' }: any) => (
-    <th style={{ width }} className={`px-4 py-3 text-[10px] font-bold text-slate-400 tracking-tight cursor-pointer hover:bg-slate-100/50 transition-colors ${textAlign}`} onClick={() => handleSort(sortKey)}>
+    <th style={{ width }} className={`px-4 py-3 text-[10px] font-bold text-slate-500 tracking-tight cursor-pointer hover:bg-slate-100/50 transition-colors ${textAlign}`} onClick={() => handleSort(sortKey)}>
       <div className={`flex items-center gap-1 ${textAlign === 'text-center' ? 'justify-center' : textAlign === 'text-right' ? 'justify-end' : ''}`}>{label} <ArrowUpDown size={8} className={`${sortConfig.key === sortKey ? 'text-indigo-600' : 'opacity-20'}`} /></div>
     </th>
   );
@@ -238,10 +231,10 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
       <div className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
         <div className="flex items-center gap-4">
           <div className="relative flex-1 min-w-0 group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={16} />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-600 transition-colors" size={16} />
             <input 
               type="text" placeholder="Tìm đơn, khách, tài xế..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-14 pr-6 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-400 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-800 text-sm placeholder:text-slate-400" 
+              className="w-full pl-14 pr-6 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-400 focus:bg-white outline-none transition-all font-bold text-slate-800 text-sm placeholder:text-slate-500" 
             />
           </div>
           <UnifiedDropdown 
@@ -278,16 +271,16 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
 
       <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-visible min-h-[400px]">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left table-fixed min-w-[1250px]">
+          <table className="w-full text-left table-fixed min-w-[1300px]">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <SortHeader label="Thông tin đơn" sortKey="created_at" width="12%" />
+                <SortHeader label="Thông tin đơn" sortKey="created_at" width="13%" />
                 <SortHeader label="Hành khách" sortKey="passenger_name" width="15%" />
-                <SortHeader label="Thông tin xe" sortKey="departure_time" width="15%" />
-                <SortHeader label="Phương tiện" sortKey="vehicle_info" width="13%" />
-                <SortHeader label="Trạng thái" sortKey="status" width="14%" textAlign="text-center" />
-                <SortHeader label="Lộ trình" sortKey="route" width="18%" />
-                <SortHeader label="Giá" sortKey="total_price" width="13%" textAlign="text-right" />
+                <SortHeader label="Phương tiện" sortKey="vehicle_info" width="18%" />
+                <SortHeader label="Trạng thái" sortKey="status" width="15%" textAlign="text-center" />
+                <SortHeader label="Điểm đón" sortKey="trip_id" width="14%" />
+                <SortHeader label="Điểm đến" sortKey="trip_id" width="14%" />
+                <SortHeader label="Giá" sortKey="total_price" width="11%" textAlign="text-right" />
               </tr>
             </thead>
             {loading ? (
@@ -297,12 +290,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
                 {filteredOrders.length > 0 ? filteredOrders.map(order => {
                   const trip = order.trips;
                   const depTime = trip?.departure_time ? new Date(trip.departure_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
-                  const arrTime = trip?.arrival_time ? new Date(trip?.arrival_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
                   const depDate = trip?.departure_time ? new Date(trip.departure_time).toLocaleDateString('vi-VN') : '--/--/----';
-                  const originInfo = parseRouteInfo(trip?.origin_name || '');
-                  const destInfo = parseRouteInfo(trip?.dest_name || '');
+                  
+                  const arrivalDateObj = trip?.arrival_time ? new Date(trip.arrival_time) : null;
+                  const arrTime = arrivalDateObj ? arrivalDateObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                  const arrDate = arrivalDateObj ? arrivalDateObj.toLocaleDateString('vi-VN') : '--/--/----';
+
                   const bookingCode = `S${order.id.substring(0, 5).toUpperCase()}`;
-                  const tripCode = trip?.trip_code ? trip.trip_code : `T${trip?.id?.substring(0, 5).toUpperCase() || '---'}`;
                   const isMapVisible = showMapId === order.id;
                   const isExpired = order.status === 'EXPIRED';
                   const createdAt = order.created_at ? new Date(order.created_at) : null;
@@ -316,23 +310,24 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
                   const parts = vehicleRaw.split(' (');
                   const vehicleModel = parts[0] || '---';
                   const licensePlate = parts[1] ? parts[1].replace(')', '') : '';
+                  const tripCode = trip?.trip_code || (trip?.id ? `T${trip.id.substring(0, 5).toUpperCase()}` : '---');
 
                   return (
                     <React.Fragment key={order.id}>
-                      <tr className={`hover:bg-slate-50/30 transition-colors ${isExpired ? 'opacity-60 grayscale' : ''}`}>
-                        <td className="px-4 py-3">
+                      <tr className={`hover:bg-slate-50/30 transition-colors ${isExpired ? 'opacity-60 grayscale' : ''} cursor-pointer`} onClick={() => setShowMapId(isMapVisible ? null : order.id)}>
+                        <td className="px-4 py-3 pr-6">
                            <div className="flex flex-col gap-1.5">
                               <div className="flex items-center gap-1.5 self-start">
                                 <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 shadow-sm">
                                   <Clock size={8} />
                                   <span className="text-[9px] font-black">{bookingTime}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1 bg-slate-50 text-slate-500 px-2 py-0.5 rounded-md border border-slate-100 shadow-sm">
+                                <div className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm">
                                   <Calendar size={8} />
                                   <span className="text-[9px] font-bold">{bookingDate}</span>
                                 </div>
                               </div>
-                              <div className="inline-flex items-center bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200 shadow-sm self-start">
+                              <div className="inline-flex items-center bg-cyan-50 text-cyan-700 px-2 py-0.5 rounded-md border border-cyan-200 shadow-sm self-start">
                                 <CopyableCode code={bookingCode} className="text-[9px] font-black" label={bookingCode} />
                               </div>
                            </div>
@@ -353,52 +348,74 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
                             </div>
                           </div>
                         </td>
+
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1.5">
+                             <div className="flex items-center gap-1.5 self-start flex-wrap max-w-full">
+                                <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border font-bold ${vConfig.style} whitespace-nowrap mb-1`}>
+                                  <VIcon size={8} />
+                                  <span className="text-[8px]">{vehicleModel}</span>
+                                </div>
+                                {licensePlate && (
+                                   <div className="inline-flex bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm whitespace-nowrap mb-1">
+                                     <CopyableCode code={licensePlate} className="text-[9px] font-black uppercase tracking-wider" label={licensePlate} />
+                                   </div>
+                                )}
+                             </div>
+                             <div className="inline-flex items-center bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md border border-rose-200 shadow-sm self-start whitespace-nowrap">
+                               <CopyableCode code={tripCode} className="text-[9px] font-black" label={tripCode} />
+                             </div>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-full max-w-[130px] relative">
+                              {actionLoading === order.id ? <div className="flex items-center justify-center py-1 bg-slate-50 rounded-lg border border-slate-100"><Loader2 className="animate-spin text-indigo-500" size={12} /></div> : <BookingStatusSelector value={order.status} onChange={(newStatus) => handleUpdateStatus(order.id, newStatus)} />}
+                            </div>
+                            {isPendingLong && !isExpired && <div className="flex items-center gap-1 text-[8px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 shadow-sm"><AlertTriangle size={8} /> Hàng chờ {Math.floor((now - new Date(order.created_at).getTime()) / 60000)} phút</div>}
+                          </div>
+                        </td>
+
                         <td className="px-4 py-3">
                            <div className="flex flex-col gap-1.5">
-                              <div className="flex items-center gap-1.5 self-start">
+                              <div className="flex items-center gap-1.5 self-start flex-wrap">
                                 <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">
                                   <Clock size={8} />
                                   <span className="text-[9px] font-black">{depTime}</span>
                                 </div>
-                                <div className="inline-flex items-center gap-1 bg-slate-50 text-slate-500 px-2 py-0.5 rounded-md border border-slate-100 shadow-sm">
+                                <div className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm">
                                   <Calendar size={8} />
                                   <span className="text-[9px] font-bold">{depDate}</span>
                                 </div>
                               </div>
-                              <div className="inline-flex items-center bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-200 shadow-sm self-start">
-                                <CopyableCode code={tripCode} className="text-[9px] font-black" label={tripCode} />
-                              </div>
+                              <p className="text-[10px] font-bold text-slate-800 truncate leading-tight mt-0.5 pr-1">
+                                {trip?.origin_name}
+                              </p>
                            </div>
                         </td>
+
                         <td className="px-4 py-3">
-                          <div className="flex flex-col gap-1.5">
-                             {licensePlate ? (
-                                <div className="inline-flex bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm self-start">
-                                  <span className="text-[9px] font-black uppercase tracking-wider">{licensePlate}</span>
+                           <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-1.5 self-start flex-wrap">
+                                <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md border border-emerald-100 shadow-sm">
+                                  <Clock size={8} />
+                                  <span className="text-[9px] font-black">{arrTime}</span>
                                 </div>
-                             ) : (
-                                <span className="text-[9px] font-bold text-slate-300 italic">N/A</span>
-                             )}
-                             <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border font-bold self-start ${vConfig.style}`}>
-                               <VIcon size={8} />
-                               <span className="text-[8px] whitespace-nowrap">{vehicleModel}</span>
-                             </div>
-                          </div>
+                                <div className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm">
+                                  <Calendar size={8} />
+                                  <span className="text-[9px] font-bold">{arrDate}</span>
+                                </div>
+                              </div>
+                              <p className="text-[10px] font-bold text-emerald-600 truncate leading-tight mt-0.5 pr-1">
+                                {trip?.dest_name}
+                              </p>
+                           </div>
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="w-32 mx-auto relative">
-                              {actionLoading === order.id ? <div className="flex items-center justify-center py-1 bg-slate-50 rounded-lg border border-slate-100"><Loader2 className="animate-spin text-indigo-500" size={12} /></div> : <BookingStatusSelector value={order.status} onChange={(newStatus) => handleUpdateStatus(order.id, newStatus)} />}
-                            </div>
-                            {isPendingLong && !isExpired && <div className="flex items-center gap-1 text-[8px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200"><AlertTriangle size={8} /> Hàng chờ {Math.floor((now - new Date(order.created_at).getTime()) / 60000)} phút</div>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 cursor-pointer" onClick={() => setShowMapId(isMapVisible ? null : order.id)}>
-                          <div className="flex items-center gap-2 pr-6"><div className="min-w-0 flex-1"><p className="text-[10px] font-bold text-slate-800 truncate leading-tight">{originInfo.huyen}</p><p className="text-[8px] font-bold text-slate-400 truncate">{originInfo.tinh}</p></div><ArrowRight size={8} className="text-slate-300 shrink-0" /><div className="min-w-0 flex-1"><p className="text-[10px] font-bold text-emerald-600 truncate leading-tight">{destInfo.huyen}</p><p className="text-[8px] font-bold text-slate-400 truncate">{destInfo.tinh}</p></div></div>
-                        </td>
+
                         <td className="px-4 py-3 text-right pr-4">
                           <p className="text-[10px] font-bold text-emerald-600 leading-tight">{new Intl.NumberFormat('vi-VN').format(order.total_price)}đ</p>
-                          <p className="text-[8px] font-bold text-slate-400 mt-0.5">{order.seats_booked} ghế</p>
+                          <p className="text-[8px] font-bold text-slate-500 mt-0.5">{order.seats_booked} ghế</p>
                         </td>
                       </tr>
                       {isMapVisible && (
@@ -409,7 +426,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
                                 <iframe width="100%" height="100%" frameBorder="0" src={`https://maps.google.com/maps?q=${encodeURIComponent(trip?.origin_name)}+to+${encodeURIComponent(trip?.dest_name)}&output=embed`} />
                               </div>
                               <div className="w-full md:w-64 space-y-3">
-                                <div className="p-4 bg-white rounded-2xl border border-indigo-100 shadow-sm"><p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Ghi chú đón trả</p><div className="space-y-2"><div className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1 shrink-0" /><p className="text-[10px] font-bold text-slate-600 leading-tight">{trip?.origin_name}</p></div><div className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 shrink-0" /><p className="text-[10px] font-bold text-emerald-600 leading-tight">{trip?.dest_name}</p></div></div></div>
+                                <div className="p-4 bg-white rounded-2xl border border-indigo-100 shadow-sm"><p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Ghi chú đón trả</p><div className="space-y-2"><div className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1 shrink-0" /><p className="text-[10px] font-bold text-slate-700 leading-tight">{trip?.origin_name}</p></div><div className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 shrink-0" /><p className="text-[10px] font-bold text-emerald-600 leading-tight">{trip?.dest_name}</p></div></div></div>
                                 <button onClick={() => setShowMapId(null)} className="w-full py-2 bg-indigo-600 text-white text-[10px] font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">Đóng bản đồ</button>
                               </div>
                             </div>
@@ -419,7 +436,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
                     </React.Fragment>
                   );
                 }) : (
-                  <tr><td colSpan={7} className="px-6 py-20 text-center italic text-slate-400 text-[11px] font-bold">Chưa có đơn hàng nào khớp với bộ lọc</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-20 text-center italic text-slate-500 text-[11px] font-bold">Chưa có đơn hàng nào khớp với bộ lọc</td></tr>
                 )}
               </tbody>
             )}

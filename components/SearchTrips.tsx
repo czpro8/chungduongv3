@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search as SearchIcon, MapPin, Calendar, Clock, User, ChevronRight, Star, LayoutGrid, CalendarDays, ChevronDown, Car, CarFront, Sparkles, Crown, DollarSign, ArrowUpDown, Filter, Check, X, History, Users, ArrowRight, AlertCircle, Timer, Zap, CheckCircle2, Play } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Calendar, Clock, User, ChevronRight, Star, LayoutGrid, CalendarDays, ChevronDown, Car, CarFront, Sparkles, Crown, DollarSign, ArrowUpDown, Filter, Check, X, History, Users, ArrowRight, AlertCircle, Timer, Zap, CheckCircle2, Play, Radio } from 'lucide-react';
 import { Trip, TripStatus, Booking } from '../types.ts';
 import CopyableCode from './CopyableCode.tsx';
 
@@ -39,11 +39,14 @@ export const getTripStatusDisplay = (trip: Trip) => {
   if (status === TripStatus.ON_TRIP) {
     return { label: 'Đang chạy', icon: Play, style: 'bg-blue-50 text-blue-600 border-blue-100' };
   }
+  if (status === TripStatus.URGENT) {
+    return { label: 'Sát giờ', icon: AlertCircle, style: 'bg-rose-50 text-rose-600 border-rose-100' };
+  }
   if (status === TripStatus.PREPARING) {
     return { label: 'Chuẩn bị', icon: Timer, style: 'bg-orange-50 text-orange-600 border-orange-100' };
   }
   if (status === TripStatus.FULL || (trip.available_seats !== undefined && trip.available_seats <= 0)) {
-    return { label: 'Đầy chỗ', icon: AlertCircle, style: 'bg-slate-100 text-slate-500 border-slate-200' };
+    return { label: 'Đầy chỗ', icon: AlertCircle, style: 'bg-slate-100 text-slate-600 border-slate-200' };
   }
   return { label: 'Chờ', icon: Clock, style: 'bg-amber-50 text-amber-500 border-amber-100' };
 };
@@ -97,9 +100,9 @@ export const UnifiedDropdown = ({ label, icon: Icon, options, value, onChange, p
 
   const renderCurrentLabel = () => {
     if (!Array.isArray(value) || value.includes('ALL') || value.length === 0) {
-      if (Array.isArray(value) && value.length === 0) return <span className="text-[11px] font-bold text-slate-400 truncate">{label}</span>;
+      if (Array.isArray(value) && value.length === 0) return <span className="text-[11px] font-bold text-slate-500 truncate">{label}</span>;
       const singleVal = Array.isArray(value) ? value[0] : value;
-      if (singleVal === 'ALL') return <span className="text-[11px] font-bold text-slate-400 truncate">{label}</span>;
+      if (singleVal === 'ALL') return <span className="text-[11px] font-bold text-slate-500 truncate">{label}</span>;
       const opt = options.find((o: any) => o.value === singleVal);
       return opt ? renderBadge(opt, true) : label;
     }
@@ -144,16 +147,16 @@ export const UnifiedDropdown = ({ label, icon: Icon, options, value, onChange, p
         className={`w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-2xl hover:border-emerald-400 transition-all shadow-sm ${isOpen ? 'ring-2 ring-emerald-100 border-emerald-400' : ''}`}
       >
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-          <Icon size={14} className={(!Array.isArray(value) ? value === 'ALL' : value.includes('ALL')) ? 'text-slate-400' : 'text-emerald-500'} />
+          <Icon size={14} className={(!Array.isArray(value) ? value === 'ALL' : value.includes('ALL')) ? 'text-slate-500' : 'text-emerald-500'} />
           {renderCurrentLabel()}
         </div>
-        <ChevronDown size={12} className={`text-slate-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`text-slate-500 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         <div className="absolute top-full mt-2 right-0 w-64 bg-white border border-slate-100 rounded-[24px] shadow-2xl z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
           <div className="relative mb-2 px-1 pt-1">
-            <SearchIcon size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <SearchIcon size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
             <input 
               type="text" 
               autoFocus
@@ -161,7 +164,7 @@ export const UnifiedDropdown = ({ label, icon: Icon, options, value, onChange, p
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onClick={(e) => e.stopPropagation()}
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-500"
             />
           </div>
           <div className="max-h-64 overflow-y-auto custom-scrollbar p-1 space-y-0.5">
@@ -170,17 +173,17 @@ export const UnifiedDropdown = ({ label, icon: Icon, options, value, onChange, p
                 key={opt.value}
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSelect(opt.value); }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left ${isSelected(opt.value) ? 'bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100' : 'text-slate-600 hover:bg-slate-50'}`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left ${isSelected(opt.value) ? 'bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100' : 'text-slate-700 hover:bg-slate-50'}`}
               >
                 {showCheckbox && (
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isSelected(opt.value) ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200 bg-white'}`}>
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isSelected(opt.value) ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300 bg-white'}`}>
                     {isSelected(opt.value) && <Check size={10} className="text-white" />}
                   </div>
                 )}
                 {renderBadge(opt, isSelected(opt.value))}
               </button>
             )) : (
-              <div className="p-4 text-center text-[10px] text-slate-400 italic font-bold">Không tìm thấy kết quả</div>
+              <div className="p-4 text-center text-[10px] text-slate-500 italic font-bold">Không tìm thấy kết quả</div>
             )}
           </div>
         </div>
@@ -233,14 +236,18 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void; userBooking
   }, [userBookings, trip.id]);
 
   const hasBooked = totalSeatsBooked > 0;
+  const isOngoing = trip.status === TripStatus.ON_TRIP;
+  const isUrgent = trip.status === TripStatus.URGENT;
+  const isPreparing = trip.status === TripStatus.PREPARING;
+  
   const isBookable = statusInfo.label !== 'Hoàn thành' && statusInfo.label !== 'Đang chạy' && statusInfo.label !== 'Huỷ';
   const vehicleConfig = getVehicleConfig(trip.vehicle_info);
   const VIcon = vehicleConfig.icon;
 
   return (
-    <div className={`bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden relative flex flex-col h-full ${!isBookable && !hasBooked ? 'opacity-60 grayscale-[0.3]' : ''}`}>
+    <div className={`bg-white p-5 rounded-[28px] border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden relative flex flex-col h-full ${!isBookable && !hasBooked ? 'opacity-60 grayscale-[0.3] border-slate-100' : isOngoing ? 'border-blue-200 bg-blue-50/20' : isUrgent ? 'border-rose-400 bg-rose-50/20' : isPreparing ? 'border-orange-300 bg-orange-50/10' : 'border-slate-100'}`}>
       <div className={`absolute top-4 right-4 flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[9px] font-bold z-10 ${statusInfo.style}`}>
-        <StatusIcon size={10} />
+        {isOngoing ? <Radio size={10} className="animate-pulse" /> : <StatusIcon size={10} />}
         {statusInfo.label}
       </div>
 
@@ -262,9 +269,9 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void; userBooking
       </div>
 
       <div className="space-y-3 mb-5 relative flex-1">
-        <div className="absolute left-[7px] top-3 bottom-3 w-[1px] bg-slate-100 border-l border-dashed border-slate-200"></div>
+        <div className="absolute left-[7px] top-3 bottom-3 w-[1px] bg-slate-200 border-l border-dashed border-slate-300"></div>
         <div className="flex items-center gap-3 relative z-10">
-          <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 bg-white shrink-0"></div>
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white shrink-0"></div>
           <p className="font-bold text-slate-700 text-[12px] truncate">{trip.origin_name}</p>
         </div>
         <div className="flex items-center gap-3 relative z-10">
@@ -273,30 +280,30 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void; userBooking
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
         <div className="flex flex-col">
           <div className="flex items-center gap-1 text-[13px] font-bold text-slate-800">
             <Clock size={12} className="text-emerald-500" /> {timeStr}
-            {arrivalStr && <><ArrowRight size={10} className="text-slate-300" /> <span className="text-emerald-500">{arrivalStr}</span></>}
+            {arrivalStr && <><ArrowRight size={10} className="text-slate-400" /> <span className="text-emerald-500">{arrivalStr}</span></>}
           </div>
-          <div className="text-[10px] font-normal text-slate-400 mt-0.5">{dateStr}</div>
+          <div className="text-[10px] font-bold text-slate-500 mt-0.5">{dateStr}</div>
         </div>
         <div className="text-right">
           <p className="text-sm font-bold text-emerald-600 tracking-tight">
             {new Intl.NumberFormat('vi-VN').format(trip.price)}đ
           </p>
-          <div className={`${trip.available_seats <= 0 ? 'text-rose-500' : 'text-slate-400'} text-[9px] font-bold`}>
+          <div className={`${trip.available_seats <= 0 ? 'text-rose-500' : 'text-slate-500'} text-[9px] font-bold`}>
             {trip.available_seats <= 0 ? `0/${trip.seats} trống` : `${trip.available_seats}/${trip.seats} trống`}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-1.5 text-[9px] font-bold text-slate-300 border-t border-slate-50 pt-3 italic">
+      <div className="mt-4 flex items-center justify-between gap-1.5 text-[9px] font-bold text-slate-500 border-t border-slate-100 pt-3 italic">
         <div className="flex items-center gap-1">
-          <History size={10} /> 
+          <History size={10} className="text-slate-400" /> 
           {trip.created_at ? `Đăng lúc: ${new Date(trip.created_at).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})} ${new Date(trip.created_at).toLocaleDateString('vi-VN')}` : 'Mới cập nhật'}
         </div>
-        <CopyableCode code={tripCode} className="text-[8px] font-bold opacity-40 group-hover:opacity-100 transition-opacity" />
+        <CopyableCode code={tripCode} className="text-[8px] font-bold bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded border border-rose-100 opacity-70 group-hover:opacity-100 transition-opacity" />
       </div>
       
       <button 
@@ -305,18 +312,21 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void; userBooking
         disabled={!isBookable && !hasBooked}
         className={`w-full mt-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
           hasBooked 
-          ? 'bg-rose-600 text-white shadow-lg shadow-rose-100 active:scale-95'
+          ? isOngoing ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 active:scale-95' : isUrgent ? 'bg-rose-600 text-white shadow-lg shadow-rose-100 active:scale-95' : 'bg-rose-600 text-white shadow-lg shadow-rose-100 active:scale-95'
           : isBookable
-            ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 active:scale-95' 
-            : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+            ? isUrgent ? 'bg-rose-600 text-white shadow-lg shadow-rose-100 active:scale-95' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 active:scale-95' 
+            : isOngoing 
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 active:scale-95'
+              : 'bg-slate-100 text-slate-500 cursor-not-allowed border border-slate-200'
         }`}
       >
         {hasBooked ? (
           <><CheckCircle2 size={14} /> Đã đặt {totalSeatsBooked} ghế</>
         ) : (
           statusInfo.label === 'Hoàn thành' ? 'Chuyến đã kết thúc' : 
-          statusInfo.label === 'Đang chạy' ? 'Xe đang di chuyển' : 
+          statusInfo.label === 'Đang chạy' ? <><Play size={14} /> Xem hành trình</> : 
           statusInfo.label === 'Huỷ' ? 'Chuyến xe đã huỷ' :
+          statusInfo.label === 'Sát giờ' ? <><AlertCircle size={14} /> Đặt khẩn cấp</> :
           trip.available_seats <= 0 ? <><Zap size={14} /> Đặt dự phòng</> : 
           <><Zap size={14} /> Đặt chỗ ngay</>
         )}
@@ -346,9 +356,10 @@ const SearchTrips: React.FC<SearchTripsProps> = ({ trips, onBook, userBookings }
   const filteredTrips = useMemo(() => {
     const searchNormalized = removeAccents(searchTerm);
     let result = trips.filter(t => {
+      const tripCode = t.trip_code || (t.id ? `T${t.id.substring(0, 5).toUpperCase()}` : '');
       const matchesSearch = removeAccents(t.origin_name).includes(searchNormalized) || 
                             removeAccents(t.dest_name).includes(searchNormalized) ||
-                            (t.trip_code && removeAccents(t.trip_code).includes(searchNormalized)) ||
+                            (tripCode && removeAccents(tripCode).includes(searchNormalized)) ||
                             (t.driver_name && removeAccents(t.driver_name).includes(searchNormalized));
       const matchesVehicle = vehicleFilter.includes('ALL') || vehicleFilter.some(v => t.vehicle_info.includes(v));
       return matchesSearch && matchesVehicle;
@@ -363,10 +374,11 @@ const SearchTrips: React.FC<SearchTripsProps> = ({ trips, onBook, userBookings }
       if (sortOrder === 'TIME_ASC') {
         const priority = (s: string) => {
           if (s === 'Chuẩn bị') return 0;
-          if (s === 'Chờ') return 1;
-          if (s === 'Đang chạy') return 2;
-          if (s === 'Dự phòng') return 3;
-          return 4;
+          if (s === 'Sát giờ') return 1;
+          if (s === 'Chờ') return 2;
+          if (s === 'Đang chạy') return 3;
+          if (s === 'Dự phòng') return 4;
+          return 5;
         };
         if (priority(statusA) !== priority(statusB)) return priority(statusA) - priority(statusB);
         return timeA - timeB;
@@ -388,12 +400,12 @@ const SearchTrips: React.FC<SearchTripsProps> = ({ trips, onBook, userBookings }
       <div className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
         <div className="flex items-center gap-4">
           <div className="relative flex-1 min-w-0 group">
-            <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={16} />
+            <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-600 transition-colors" size={16} />
             <input 
               type="text" placeholder="Tìm lộ trình, tài xế, mã chuyến..." 
               value={searchTerm} 
               onChange={(e) => { setSearchTerm(e.target.value); setLoading(true); }}
-              className="w-full pl-14 pr-6 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-400 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-800 text-sm placeholder:text-slate-400" 
+              className="w-full pl-14 pr-6 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-400 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-800 text-sm placeholder:text-slate-500" 
             />
           </div>
           <UnifiedDropdown 
@@ -429,8 +441,8 @@ const SearchTrips: React.FC<SearchTripsProps> = ({ trips, onBook, userBookings }
           <TripCard key={trip.id} trip={trip} onBook={onBook} userBookings={userBookings} />
         )) : (
           <div className="col-span-full py-20 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
-             <AlertCircle size={40} className="mx-auto text-slate-200 mb-3" />
-             <p className="text-xs font-bold text-slate-400 uppercase">Không có chuyến xe nào</p>
+             <AlertCircle size={40} className="mx-auto text-slate-300 mb-3" />
+             <p className="text-xs font-bold text-slate-500 uppercase">Không có chuyến xe nào</p>
           </div>
         )}
       </div>

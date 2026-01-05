@@ -12,7 +12,8 @@ export interface Profile {
 }
 
 export enum TripStatus {
-  PREPARING = 'PREPARING',     // Chuẩn bị khởi hành
+  PREPARING = 'PREPARING',     // Chuẩn bị khởi hành (6h trước)
+  URGENT = 'URGENT',           // Sát giờ khởi hành (1h trước)
   FULL = 'FULL',               // Đã full ghế
   ON_TRIP = 'ON_TRIP',         // Đang trong chuyến
   COMPLETED = 'COMPLETED',     // Hoàn thành

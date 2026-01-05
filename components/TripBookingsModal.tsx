@@ -60,7 +60,7 @@ const TripBookingsModal: React.FC<TripBookingsModalProps> = ({ trip, bookings, i
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-4xl rounded-[40px] shadow-2xl overflow-visible animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[90vh] flex flex-col relative">
-        {/* Nút đóng Floating Red Button - Viền trắng mỏng tinh tế */}
+        {/* Nút đóng Floating Red Button */}
         <button 
           onClick={onClose} 
           className="absolute -top-4 -right-4 w-12 h-12 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 hover:rotate-90 hover:bg-rose-600 transition-all duration-300 z-[160] border-2 border-white"
@@ -79,7 +79,7 @@ const TripBookingsModal: React.FC<TripBookingsModalProps> = ({ trip, bookings, i
                 <h3 className="text-2xl font-black uppercase italic tracking-tight font-outfit">Danh sách Hành khách</h3>
               </div>
               <div className="flex items-center gap-2 mt-2">
-                 <CopyableCode code={tripCode} className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded text-white" />
+                 <CopyableCode code={tripCode} className="text-[10px] font-black bg-rose-50 text-rose-600 px-2 py-0.5 rounded border border-rose-100" />
                  <span className="text-white/40">•</span>
                  <p className="text-xs font-bold text-indigo-100 flex items-center gap-1.5 uppercase tracking-wider">
                     <Navigation size={12} /> {trip.origin_name} → {trip.dest_name}
@@ -118,7 +118,7 @@ const TripBookingsModal: React.FC<TripBookingsModalProps> = ({ trip, bookings, i
                             <div className="min-w-0">
                               <p className="text-sm font-black text-slate-900 truncate font-outfit">{booking.profiles?.full_name || 'Khách vãng lai'}</p>
                               <div className="flex items-center gap-3 mt-1">
-                                <CopyableCode code={bookingCode} className="text-[9px] font-black text-slate-400 uppercase tracking-tighter" />
+                                <CopyableCode code={bookingCode} className="text-[9px] font-black bg-cyan-50 text-cyan-700 px-2 py-0.5 border border-cyan-100 rounded uppercase tracking-tighter" />
                                 <div className="flex items-center gap-2">
                                   {booking.passenger_phone && (
                                     <a href={`tel:${booking.passenger_phone}`} className="w-6 h-6 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 shrink-0" title="Gọi điện">

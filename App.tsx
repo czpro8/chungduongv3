@@ -27,6 +27,7 @@ const App: React.FC = () => {
   
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   const prevBookingsRef = useRef<Booking[]>([]);
@@ -173,12 +174,9 @@ const App: React.FC = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
         const { eventType, new: newRecord, old: oldRecord } = payload;
         
-        // Cập nhật dữ liệu ngầm
         refreshAllData();
 
-        // Xử lý thông báo
         if (user?.id) {
-          // 1. Dành cho Hành khách: Đơn hàng thay đổi trạng thái
           if (eventType === 'UPDATE' && newRecord.passenger_id === user.id) {
             if (newRecord.status !== oldRecord.status) {
               const statusMap: any = { CONFIRMED: 'được duyệt', REJECTED: 'bị từ chối', EXPIRED: 'hết hạn' };
@@ -191,9 +189,7 @@ const App: React.FC = () => {
             }
           }
 
-          // 2. Dành cho Tài xế: Có khách đặt chỗ mới
           if (eventType === 'INSERT' && profile?.role === 'driver') {
-             // Cần kiểm tra xem trip_id này có phải của driver này không
              supabase.from('trips').select('driver_id').eq('id', newRecord.trip_id).single()
                .then(({data}) => {
                  if (data && data.driver_id === user.id) {
@@ -214,52 +210,47 @@ const App: React.FC = () => {
     };
   }, [fetchTrips, fetchUserBookings, fetchStaffBookings, fetchUserStats, user?.id, profile, refreshAllData]);
 
-  // Background worker để tự động cập nhật trạng thái chuyến đi và xử lý đơn hàng hết hạn
   useEffect(() => {
     const interval = setInterval(async () => {
       const now = new Date();
       let hasGlobalChanges = false;
 
-      // 1. Quét Trips để cập nhật trạng thái tự động
       for (const trip of trips) {
         if (trip.status === TripStatus.CANCELLED || trip.status === TripStatus.COMPLETED) continue;
-
         const departure = new Date(trip.departure_time);
         const arrival = trip.arrival_time ? new Date(trip.arrival_time) : new Date(departure.getTime() + 3 * 60 * 60 * 1000);
-        
         let targetStatus = trip.status;
-
+        
+        const diffMins = Math.floor((departure.getTime() - now.getTime()) / 60000);
+        
         if (now > arrival) {
           targetStatus = TripStatus.COMPLETED;
         } else if (now >= departure && now <= arrival) {
           targetStatus = TripStatus.ON_TRIP;
         } else {
-          const diffMins = Math.floor((departure.getTime() - now.getTime()) / 60000);
           if (diffMins <= 60 && diffMins > 0) {
-            targetStatus = TripStatus.PREPARING;
+            targetStatus = TripStatus.URGENT; // Sát giờ (< 1h)
+          } else if (diffMins <= 360 && diffMins > 0) {
+            targetStatus = TripStatus.PREPARING; // Chuẩn bị (< 6h)
           }
         }
-
+        
         if (targetStatus !== trip.status) {
           hasGlobalChanges = true;
           await supabase.from('trips').update({ status: targetStatus }).eq('id', trip.id);
         }
       }
 
-      // 2. Quét Bookings để xử lý hết hạn (Quá 2 tiếng từ giờ khởi hành)
       const { data: pendingBookings } = await supabase
         .from('bookings')
         .select('*, trips(departure_time)')
         .in('status', ['PENDING', 'CONFIRMED']);
-
       if (pendingBookings) {
         for (const booking of pendingBookings) {
           if (!booking.trips) continue;
-          
           const departure = new Date(booking.trips.departure_time);
           const timeSinceDeparture = now.getTime() - departure.getTime();
           const twoHoursInMs = 2 * 60 * 60 * 1000;
-
           if (timeSinceDeparture > twoHoursInMs) {
             hasGlobalChanges = true;
             await supabase
@@ -269,10 +260,8 @@ const App: React.FC = () => {
           }
         }
       }
-
       if (hasGlobalChanges) refreshAllData();
-    }, 60000); // Chạy mỗi phút 1 lần
-
+    }, 60000);
     return () => clearInterval(interval);
   }, [trips, refreshAllData]);
 
@@ -293,10 +282,8 @@ const App: React.FC = () => {
         vehicle_info: t.vehicleInfo,
         status: TripStatus.PREPARING 
       }));
-      
       const { error } = await supabase.from('trips').insert(formattedTrips);
       if (error) throw error;
-      
       refreshAllData();
       setActiveTab('manage-trips');
     } catch (err: any) {
@@ -307,12 +294,10 @@ const App: React.FC = () => {
   const handleConfirmBooking = async (data: { phone: string; seats: number; note: string }) => {
     if (!selectedTrip || !user) return;
     const { data: latestTrip } = await supabase.from('trips').select('available_seats, status').eq('id', selectedTrip.id).single();
-    
     if (latestTrip && (latestTrip.status === TripStatus.CANCELLED || latestTrip.status === TripStatus.COMPLETED)) {
       alert('Xin lỗi, chuyến xe này không còn khả dụng.');
       return;
     }
-
     const { data: newBooking, error: bookingError } = await supabase.from('bookings').insert({
       trip_id: selectedTrip.id,
       passenger_id: user.id,
@@ -321,7 +306,6 @@ const App: React.FC = () => {
       total_price: selectedTrip.price * data.seats,
       status: 'PENDING'
     }).select().single();
-
     if (bookingError) {
       alert('Lỗi đặt chỗ: ' + bookingError.message);
     } else {
@@ -358,17 +342,8 @@ const App: React.FC = () => {
       case 'bookings': return <BookingsList bookings={bookings} trips={trips} onRefresh={refreshAllData} />;
       case 'manage-trips': return <TripManagement profile={profile} trips={trips} bookings={staffBookings} onRefresh={fetchTrips} />;
       case 'manage-orders': return <OrderManagement profile={profile} trips={trips} onRefresh={refreshAllData} />;
-      case 'profile': return (
-        <ProfileManagement 
-          profile={profile} 
-          onUpdate={() => user && fetchProfile(user.id)} 
-          stats={userStats} 
-          allTrips={trips}
-          userBookings={bookings}
-        />
-      );
       case 'admin': return profile?.role === 'admin' ? <AdminPanel /> : <SearchTrips trips={trips} onBook={handleOpenBookingModal} userBookings={bookings} />;
-      default: return null;
+      default: return <SearchTrips trips={trips} onBook={handleOpenBookingModal} userBookings={bookings} />;
     }
   };
 
@@ -380,6 +355,10 @@ const App: React.FC = () => {
         clearNotification={(id) => setNotifications(n => n.map(x => x.id === id ? {...x, read: true} : x))}
         profile={profile}
         onLoginClick={() => setIsAuthModalOpen(true)}
+        onProfileClick={() => {
+          if (!user) setIsAuthModalOpen(true);
+          else setIsProfileModalOpen(true);
+        }}
       >
         <div className="animate-slide-up">
           {renderContent()}
@@ -395,6 +374,15 @@ const App: React.FC = () => {
         />
       )}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={() => refreshAllData()} />
+      <ProfileManagement 
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profile={profile} 
+        onUpdate={() => user && fetchProfile(user.id)} 
+        stats={userStats} 
+        allTrips={trips}
+        userBookings={bookings}
+      />
     </>
   );
 };

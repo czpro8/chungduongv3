@@ -41,7 +41,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
     onClose();
   };
 
-  const tripCode = `T${trip.id.substring(0, 5).toUpperCase()}`;
+  const tripCode = trip.trip_code || `T${trip.id.substring(0, 5).toUpperCase()}`;
   const isWaitingList = trip.available_seats <= 0;
 
   return (
@@ -63,7 +63,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
               </h3>
               <CopyableCode 
                 code={tripCode} 
-                className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black text-white"
+                className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-black border border-rose-100"
               />
             </div>
             <p className="text-emerald-100 text-xs mt-0.5 font-bold">

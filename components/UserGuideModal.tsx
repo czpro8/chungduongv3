@@ -67,11 +67,11 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {[
-                { label: 'Chờ', icon: Clock, style: 'bg-amber-50 text-amber-600 border-amber-100', desc: 'Khi chuyến xe vừa được đăng. Đang nhận khách, thời gian khởi hành còn xa (> 60 phút).' },
-                { label: 'Chuẩn bị', icon: Timer, style: 'bg-orange-50 text-orange-600 border-orange-100', desc: 'Tự động: 60 phút trước giờ khởi hành. Thông báo cho khách hàng chuẩn bị ra điểm đón.' },
+                { label: 'Chờ', icon: Clock, style: 'bg-amber-50 text-amber-600 border-amber-100', desc: 'Khi chuyến xe vừa được đăng. Đang nhận khách, thời gian khởi hành còn xa (> 6 tiếng).' },
+                { label: 'Chuẩn bị', icon: Timer, style: 'bg-orange-50 text-orange-600 border-orange-100', desc: 'Tự động: 6 tiếng trước giờ khởi hành. Thẻ xe hiển thị viền Cam để gây chú ý.' },
+                { label: 'Sát giờ', icon: AlertCircle, style: 'bg-rose-50 text-rose-600 border-rose-100', desc: 'Tự động: 1 tiếng trước giờ khởi hành. Thẻ xe hiển thị viền Đỏ khẩn cấp.' },
                 { label: 'Đang chạy', icon: Play, style: 'bg-blue-50 text-blue-600 border-blue-100', desc: 'Tự động: Khi đến giờ khởi hành. Xe bắt đầu di chuyển trên lộ trình.' },
                 { label: 'Hoàn thành', icon: CheckCircle2, style: 'bg-emerald-50 text-emerald-600 border-emerald-100', desc: 'Tự động: Sau giờ dự kiến đến. Chuyến đi kết thúc thành công. Đóng nhận khách.' },
-                { label: 'Đầy chỗ', icon: AlertCircle, style: 'bg-slate-100 text-slate-500 border-slate-200', desc: 'Tự động: Khi số ghế trống bằng 0. Xe đã nhận đủ người, không hiện trên thanh tìm kiếm.' },
                 { label: 'Đã huỷ', icon: XCircle, style: 'bg-rose-50 text-rose-500 border-rose-100', desc: 'Thủ công: Tài xế hoặc Admin nhấn huỷ do lý do khách quan.' },
               ].map((status, idx) => (
                 <div key={idx} className="p-6 bg-slate-50/50 rounded-[32px] border border-slate-100 hover:bg-white hover:shadow-xl transition-all duration-300 group">

@@ -15,6 +15,7 @@ interface LayoutProps {
   clearNotification: (id: string) => void;
   profile?: Profile | null;
   onLoginClick: () => void;
+  onProfileClick: () => void;
 }
 
 const getRoleConfig = (role?: UserRole) => {
@@ -22,7 +23,7 @@ const getRoleConfig = (role?: UserRole) => {
     case 'admin': return { label: 'Quản trị', color: 'text-rose-600', bg: 'bg-rose-50', icon: Shield };
     case 'manager': return { label: 'Điều phối', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: Settings };
     case 'driver': return { label: 'Tài xế', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Car };
-    default: return { label: 'Thành viên', color: 'text-slate-500', bg: 'bg-slate-50', icon: User };
+    default: return { label: 'Thành viên', color: 'text-slate-600', bg: 'bg-slate-50', icon: User };
   }
 };
 
@@ -36,7 +37,7 @@ const RoadAnimation = () => {
           {days.map((day, i) => (
             <div key={i} className="day-container flex flex-col items-center gap-1 group cursor-default">
               <div className="day-dot"></div>
-              <span className="text-[7px] font-normal text-slate-400 group-hover:text-emerald-600 transition-colors">
+              <span className="text-[7px] font-bold text-slate-500 group-hover:text-emerald-600 transition-colors">
                 {day}
               </span>
             </div>
@@ -54,7 +55,7 @@ const RoadAnimation = () => {
   );
 };
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, notifications, clearNotification, profile, onLoginClick }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, notifications, clearNotification, profile, onLoginClick, onProfileClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -112,34 +113,34 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
         </div>
         
         <nav className="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar pr-2">
-          <p className="text-[11px] font-normal text-slate-400 mb-4 px-3">Cá nhân</p>
+          <p className="text-[11px] font-bold text-slate-500 mb-4 px-3 uppercase tracking-wider">Cá nhân</p>
           {navItems.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                activeTab === item.id ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                activeTab === item.id ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              <item.icon size={18} className={activeTab === item.id ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-600'} />
+              <item.icon size={18} className={activeTab === item.id ? 'text-emerald-600' : 'text-slate-500 group-hover:text-emerald-600'} />
               <span className="text-sm">{item.label}</span>
             </button>
           ))}
 
           {isStaff && (
             <>
-              <p className="text-[11px] font-normal text-slate-400 mt-8 mb-4 px-3">Điều hành</p>
+              <p className="text-[11px] font-bold text-slate-500 mt-8 mb-4 px-3 uppercase tracking-wider">Điều hành</p>
               {manageItems.filter(item => item.roles.includes(profile?.role || '')).map(item => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                    activeTab === item.id ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    activeTab === item.id ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
                 >
-                  <item.icon size={18} className={activeTab === item.id ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-600'} />
+                  <item.icon size={18} className={activeTab === item.id ? 'text-emerald-600' : 'text-slate-500 group-hover:text-emerald-600'} />
                   <span className="text-sm">{item.label}</span>
                 </button>
               ))}
@@ -147,10 +148,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                 type="button"
                 onClick={() => setActiveTab('post')}
                 className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                  activeTab === 'post' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  activeTab === 'post' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <PlusCircle size={18} className={activeTab === 'post' ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'} />
+                <PlusCircle size={18} className={activeTab === 'post' ? 'text-white' : 'text-slate-500 group-hover:text-emerald-600'} />
                 <span className="text-sm">Đăng chuyến mới</span>
               </button>
             </>
@@ -166,16 +167,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-sm font-bold text-slate-800 truncate leading-tight">{profile.full_name}</p>
-                  <p className={`text-[11px] font-normal mt-1 flex items-center gap-1 ${roleConfig.color}`}>
+                  <p className={`text-[11px] font-bold mt-1 flex items-center gap-1 ${roleConfig.color}`}>
                     <RoleIcon size={10} /> {roleConfig.label}
                   </p>
                 </div>
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => setActiveTab('profile')} className="flex-1 py-2.5 bg-white text-emerald-600 rounded-2xl hover:bg-emerald-50 border border-slate-100 flex items-center justify-center gap-2 transition-all shadow-sm font-normal text-xs">
+                <button type="button" onClick={onProfileClick} className="flex-1 py-2.5 bg-white text-emerald-600 rounded-2xl hover:bg-emerald-50 border border-slate-100 flex items-center justify-center gap-2 transition-all shadow-sm font-bold text-xs">
                   <Settings size={14} /> <span>Hồ sơ</span>
                 </button>
-                <button type="button" onClick={() => supabase.auth.signOut()} className="p-2.5 bg-white text-slate-400 rounded-2xl hover:text-rose-600 hover:bg-rose-50 border border-slate-100 transition-all shadow-sm">
+                <button type="button" onClick={() => supabase.auth.signOut()} className="p-2.5 bg-white text-slate-500 rounded-2xl hover:text-rose-600 hover:bg-rose-50 border border-slate-100 transition-all shadow-sm">
                   <LogOut size={16} />
                 </button>
               </div>
@@ -207,7 +208,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
             <button 
               type="button" 
               onClick={() => setShowUserGuide(true)}
-              className="p-2 sm:p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all"
+              className="p-2 sm:p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all"
               title="Hướng dẫn sử dụng"
             >
               <HelpCircle size={20} />
@@ -216,7 +217,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
               <button 
                 type="button" 
                 onClick={() => setShowNotifications(!showNotifications)} 
-                className="p-2 sm:p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all relative"
+                className="p-2 sm:p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all relative"
               >
                 <Bell size={20} className={unreadCount > 0 ? 'animate-bell text-rose-500' : ''} />
                 {unreadCount > 0 && (
@@ -230,7 +231,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                 <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-slate-100 rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                   <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
                     <span className="text-xs font-bold text-slate-800">Thông báo</span>
-                    <span className="text-[10px] font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{unreadCount} mới</span>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{unreadCount} mới</span>
                   </div>
                   <div className="max-h-96 overflow-y-auto custom-scrollbar">
                     {notifications.length > 0 ? (
@@ -247,8 +248,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                             </div>
                             <div>
                               <p className="text-[11px] font-bold text-slate-800 leading-tight">{n.title}</p>
-                              <p className="text-[10px] font-normal text-slate-500 mt-1 leading-relaxed">{n.message}</p>
-                              <p className="text-[8px] font-normal text-slate-300 mt-1">
+                              <p className="text-[10px] font-bold text-slate-600 mt-1 leading-relaxed">{n.message}</p>
+                              <p className="text-[8px] font-bold text-slate-400 mt-1">
                                 {new Date(n.timestamp).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})} • {new Date(n.timestamp).toLocaleDateString('vi-VN')}
                               </p>
                             </div>
@@ -257,8 +258,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                       ))
                     ) : (
                       <div className="p-8 text-center">
-                        <Bell size={32} className="mx-auto text-slate-100 mb-2" />
-                        <p className="text-[10px] font-normal text-slate-400">Không có thông báo nào</p>
+                        <Bell size={32} className="mx-auto text-slate-200 mb-2" />
+                        <p className="text-[10px] font-bold text-slate-500">Không có thông báo nào</p>
                       </div>
                     )}
                   </div>
@@ -275,22 +276,22 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
         {/* Bottom Navigation Mobile */}
         <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[70]">
           <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[32px] px-2 py-2 flex items-center justify-around">
-            <button type="button" onClick={() => setActiveTab('search')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <button type="button" onClick={() => setActiveTab('search')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-500'}`}>
               <Search size={22} className={activeTab === 'search' ? 'scale-110' : ''} />
-              <span className="text-[10px] font-normal">Tìm kiếm</span>
+              <span className="text-[10px] font-bold">Tìm kiếm</span>
             </button>
-            <button type="button" onClick={() => setActiveTab('bookings')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'bookings' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <button type="button" onClick={() => setActiveTab('bookings')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'bookings' ? 'text-emerald-600' : 'text-slate-500'}`}>
               <Ticket size={22} className={activeTab === 'bookings' ? 'scale-110' : ''} />
-              <span className="text-[10px] font-normal">Lịch sử</span>
+              <span className="text-[10px] font-bold">Lịch sử</span>
             </button>
             {isStaff && (
               <button type="button" onClick={() => setActiveTab('post')} className="flex flex-col items-center justify-center h-16 w-16 bg-emerald-600 text-white rounded-[24px] shadow-lg shadow-emerald-100 -translate-y-4 scale-110 active:scale-95 transition-all">
                 <PlusCircle size={26} />
               </button>
             )}
-            <button type="button" onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'profile' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <button type="button" onClick={onProfileClick} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'profile' ? 'text-emerald-600' : 'text-slate-500'}`}>
               <User size={22} className={activeTab === 'profile' ? 'scale-110' : ''} />
-              <span className="text-[10px] font-normal">Hồ sơ</span>
+              <span className="text-[10px] font-bold">Hồ sơ</span>
             </button>
           </div>
         </nav>
