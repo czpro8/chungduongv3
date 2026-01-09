@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { TrendingUp, Users, MapPin, DollarSign, ArrowUpRight, XCircle, AlertCircle, ShoppingBag, CheckCircle2, Navigation } from 'lucide-react';
+import { TrendingUp, Users, MapPin, DollarSign, ArrowUpRight, XCircle, AlertCircle, ShoppingBag, CheckCircle2, Navigation, Sparkles } from 'lucide-react';
 import { Trip, Booking } from '../types';
 
 const MiniStatCard = ({ title, value, icon: Icon, color, trend }: any) => (
@@ -94,28 +94,32 @@ const Dashboard: React.FC<DashboardProps> = ({ bookings, trips }) => {
           </div>
         </div>
         
-        <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm flex flex-col">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-10">Phân tích hành vi</h3>
+        {/* Cột phải: Phân tích hành vi - Cập nhật Gradient Emerald-Indigo */}
+        <div className="bg-gradient-to-br from-emerald-50/80 to-indigo-50/60 p-10 rounded-[40px] border border-emerald-100 shadow-sm flex flex-col backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-10">
+            <Sparkles className="text-emerald-500" size={18} />
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Phân tích hành vi</h3>
+          </div>
           <div className="space-y-6 flex-1">
             <div className="flex flex-col gap-2">
                <div className="flex justify-between items-end">
-                  <span className="text-xs font-normal text-slate-400">Nhu cầu đặt xe</span>
-                  <span className="text-xs font-bold text-slate-800">82%</span>
+                  <span className="text-xs font-bold text-slate-500">Nhu cầu đặt xe</span>
+                  <span className="text-xs font-bold text-emerald-600">82%</span>
                </div>
-               <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+               <div className="w-full bg-slate-200/50 h-2 rounded-full overflow-hidden">
                   <div className="bg-emerald-600 h-full w-[82%] rounded-full shadow-sm"></div>
                </div>
             </div>
             <div className="flex flex-col gap-2">
                <div className="flex justify-between items-end">
-                  <span className="text-xs font-normal text-slate-400">Tốc độ xác nhận</span>
-                  <span className="text-xs font-bold text-slate-800">1.2m Avg</span>
+                  <span className="text-xs font-bold text-slate-500">Tốc độ xác nhận</span>
+                  <span className="text-xs font-bold text-indigo-600">1.2m Avg</span>
                </div>
-               <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[95%] rounded-full shadow-sm"></div>
+               <div className="w-full bg-slate-200/50 h-2 rounded-full overflow-hidden">
+                  <div className="bg-indigo-500 h-full w-[95%] rounded-full shadow-sm"></div>
                </div>
             </div>
-            <div className="mt-10 p-6 bg-emerald-600 rounded-[32px] text-white shadow-xl shadow-emerald-100">
+            <div className="mt-10 p-6 bg-indigo-600 rounded-[32px] text-white shadow-xl shadow-indigo-100">
                <p className="text-[11px] font-normal opacity-60">Thống kê tháng</p>
                <p className="text-2xl font-bold mt-2">+150 Trips</p>
                <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10">

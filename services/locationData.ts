@@ -32,6 +32,9 @@ export const LOCAL_LOCATIONS = [
   { name: "Ứng Hòa, Hà Nội", shortName: "Ứng Hòa" },
   { name: "Mỹ Đức, Hà Nội", shortName: "Mỹ Đức" },
 
+  // Giao Thủy, Nam Định (Mới)
+  { name: "Giao Thủy, Nam Định", shortName: "Giao Thủy" },
+
   // Xã/Thị trấn Huyện Giao Thủy, Nam Định (Đã lược bỏ nhãn)
   { name: "Ngô Đồng, Giao Thủy, Nam Định", shortName: "Ngô Đồng" },
   { name: "Quất Lâm, Giao Thủy, Nam Định", shortName: "Quất Lâm" },

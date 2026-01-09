@@ -25,7 +25,7 @@ const statusOptions = [
   { label: 'Đầy chỗ', value: TripStatus.FULL, style: 'text-slate-600 bg-slate-50 border-slate-200', icon: AlertCircle },
 ];
 
-const TripStatusSelector = ({ value, onChange, disabled, arrivalTime }: { value: TripStatus, onChange: (status: TripStatus) => void, disabled?: boolean, arrivalTime?: string }) => {
+export const TripStatusSelector = ({ value, onChange, disabled, arrivalTime }: { value: TripStatus, onChange: (status: TripStatus) => void, disabled?: boolean, arrivalTime?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [statusSearch, setStatusSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,7 +64,7 @@ const TripStatusSelector = ({ value, onChange, disabled, arrivalTime }: { value:
         type="button" 
         disabled={disabled} 
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(!isOpen); }}
-        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl border transition-all duration-300 relative z-20 ${currentStatus.style} ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-400 shadow-sm' : 'hover:brightness-95'} ${disabled ? 'opacity-70 cursor-not-allowed grayscale-[0.2]' : ''}`}
+        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl border transition-all duration-300 relative z-20 ${currentStatus.style} ${isOpen ? 'ring-2 ring-indigo-100 border-indigo-400 shadow-sm' : 'hover:brightness-95'} ${disabled ? 'opacity-80 cursor-not-allowed' : ''}`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <currentStatus.icon size={10} className={currentStatus.style.split(' ')[0]} />
@@ -125,11 +125,12 @@ interface TripManagementProps {
   trips: Trip[];
   bookings: Booking[];
   onRefresh: () => void;
+  onViewTripDetails: (trip: Trip) => void; 
 }
 
 type SortConfig = { key: keyof Trip | 'driver_name'; direction: 'asc' | 'desc' | null };
 
-const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, bookings, onRefresh }) => {
+const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, bookings, onRefresh, onViewTripDetails }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>(['ALL']);
   const [sortOrder, setSortOrder] = useState('NEWEST');
@@ -191,13 +192,11 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
   const handleUpdateStatus = async (tripId: string, newStatus: TripStatus) => {
     const trip = trips.find(t => t.id === tripId);
     
-    // 1. Kiểm tra nếu chuyến xe đã hoàn thành trước đó
     if (trip?.status === TripStatus.COMPLETED) {
        alert("Chuyến xe đã hoàn thành, không thể thay đổi thông tin.");
        return;
     }
 
-    // 2. Kiểm tra nếu cố tình hoàn thành sớm hơn dự kiến
     if (newStatus === TripStatus.COMPLETED && trip?.arrival_time) {
       const now = new Date();
       const arrival = new Date(trip.arrival_time);
@@ -235,41 +234,114 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 min-w-0 group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-600 transition-colors" size={16} />
-            <input 
-              type="text" placeholder="Tìm chuyến xe, mã số..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setLoading(true); }}
-              className="w-full pl-14 pr-6 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-emerald-400 focus:bg-white outline-none transition-all font-bold text-slate-800 text-sm placeholder:text-slate-500" 
+      {/* Cập nhật màu nền cho Frame Search & Filter của Quản lý chuyến xe - Đồng nhất Emerald-Indigo */}
+      <div className="bg-gradient-to-br from-emerald-50/80 to-indigo-50/60 p-6 rounded-[32px] border border-emerald-100 shadow-sm space-y-5 backdrop-blur-sm relative z-30">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative w-full group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={16} />
+              <input 
+                type="text" placeholder="Tìm..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setLoading(true); }}
+                className="w-full pl-10 pr-4 py-2.5 bg-white/80 border border-slate-200 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-50/50 rounded-2xl outline-none transition-all font-bold text-slate-800 text-sm placeholder:text-slate-400 shadow-sm" 
+              />
+            </div>
+            <div className="w-full">
+              <UnifiedDropdown 
+                label="Sắp xếp" icon={ArrowUpDown} value={sortOrder} width="w-full" showCheckbox={false}
+                options={[
+                  { label: 'Vừa đăng xong', value: 'NEWEST' },
+                  { label: 'Sắp khởi hành', value: 'DEPARTURE_ASC' },
+                  { label: 'Giá thấp nhất', value: 'PRICE_ASC' },
+                  { label: 'Nhiều ghế nhất', value: 'SEATS_DESC' }
+                ]}
+                onChange={(val: string) => { setSortOrder(val); setLoading(true); }}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap gap-3 w-full">
+            <UnifiedDropdown 
+              label="Trạng thái" icon={ClipboardList} value={statusFilter} width="w-full lg:w-48" showCheckbox={true}
+              isStatus={true}
+              statusConfig={statusOptions}
+              options={[
+                {label:'Tất cả', value:'ALL'}, 
+                ...statusOptions
+              ]}
+              onChange={(val: string[]) => { setStatusFilter(val); setLoading(true); }}
             />
           </div>
-          <UnifiedDropdown 
-            label="Sắp xếp theo" icon={ArrowUpDown} value={sortOrder} width="w-56" showCheckbox={false}
-            options={[
-              { label: 'Vừa đăng xong', value: 'NEWEST' },
-              { label: 'Sắp khởi hành', value: 'DEPARTURE_ASC' },
-              { label: 'Giá thấp nhất', value: 'PRICE_ASC' },
-              { label: 'Nhiều ghế nhất', value: 'SEATS_DESC' }
-            ]}
-            onChange={(val: string) => { setSortOrder(val); setLoading(true); }}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <UnifiedDropdown 
-            label="Trạng thái" icon={ClipboardList} value={statusFilter} width="w-48" showCheckbox={true}
-            isStatus={true}
-            statusConfig={statusOptions}
-            options={[
-              {label:'Tất cả', value:'ALL'}, 
-              ...statusOptions
-            ]}
-            onChange={(val: string[]) => { setStatusFilter(val); setLoading(true); }}
-          />
         </div>
       </div>
 
-      <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-visible min-h-[400px]">
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-4">
+        {displayTrips.map(trip => {
+          const fillPercent = Math.min(100, ((trip.seats - trip.available_seats) / trip.seats) * 100);
+          const depTime = new Date(trip.departure_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+          const depDate = new Date(trip.departure_time).toLocaleDateString('vi-VN');
+          const tripCode = trip.trip_code || (trip.id ? `T${trip.id.substring(0, 5).toUpperCase()}` : '');
+          const isCompleted = trip.status === TripStatus.COMPLETED;
+
+          return (
+            <div key={trip.id} className={`bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm relative overflow-visible ${isCompleted ? 'opacity-80 bg-slate-50/50' : ''}`} onClick={() => onViewTripDetails(trip)}>
+              <div className="flex justify-between items-start mb-4">
+                <div className="inline-flex items-center bg-rose-50 text-rose-600 px-2 py-1 rounded-lg text-[10px] font-black border border-rose-100">
+                  <CopyableCode code={tripCode} label={tripCode} />
+                </div>
+                <div className="w-32" onClick={(e) => e.stopPropagation()}>
+                  {actionLoading === trip.id ? (
+                    <div className="flex items-center justify-center py-1 bg-slate-50 rounded-xl border border-slate-100">
+                      <Loader2 className="animate-spin text-indigo-500" size={12} />
+                    </div>
+                  ) : (
+                    <TripStatusSelector 
+                      value={trip.status} 
+                      disabled={isCompleted}
+                      arrivalTime={trip.arrival_time}
+                      onChange={(newStatus) => handleUpdateStatus(trip.id, newStatus)} 
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-sm shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-800 leading-tight">{trip.origin_name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{depTime}</span>
+                      <span className="text-[10px] font-bold text-slate-400">{depDate}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-800 leading-tight">{trip.dest_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400">Giá vé</span>
+                  <span className="text-sm font-black text-emerald-600">{new Intl.NumberFormat('vi-VN').format(trip.price)}đ</span>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[9px] font-bold text-slate-500">{trip.seats - trip.available_seats}/{trip.seats} ghế</span>
+                  <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-500 ${fillPercent >= 100 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${fillPercent}%` }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-visible min-h-[400px]">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left table-fixed min-w-[1250px]">
             <thead>
@@ -311,16 +383,21 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
                   const vehicleModel = vehicleParts[0] || '---';
                   const licensePlate = vehicleParts[1] ? vehicleParts[1].replace(')', '') : '';
 
+
                   return (
-                    <tr key={trip.id} className={`hover:bg-slate-50/30 transition-colors ${isCompleted ? 'bg-slate-50/20' : isOngoing ? 'bg-blue-50/10' : isUrgent ? 'bg-rose-50/10' : ''}`}>
+                    <tr 
+                      key={trip.id} 
+                      className={`hover:bg-slate-50/30 transition-colors cursor-pointer ${isCompleted ? 'bg-slate-50/20 opacity-90' : isOngoing ? 'bg-blue-50/10' : isUrgent ? 'bg-rose-50/10' : ''}`}
+                      onClick={() => onViewTripDetails(trip)} 
+                    >
                       <td className="px-4 py-4">
-                         <div className={`flex flex-col gap-2 ${isCompleted ? 'opacity-60' : ''}`}>
+                         <div className={`flex flex-col gap-2 ${isCompleted ? 'opacity-90' : ''}`}>
                             <div className="flex items-center gap-1.5 self-start">
                               <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 shadow-sm">
                                 <Clock size={8} />
                                 <span className="text-[9px] font-black">{postTime}</span>
                               </div>
-                              <div className="inline-flex items-center gap-1 bg-slate-50 text-slate-500 px-2 py-0.5 rounded-md border border-slate-100 shadow-sm">
+                              <div className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm">
                                 <Calendar size={8} />
                                 <span className="text-[9px] font-bold">{postDate}</span>
                               </div>
@@ -332,7 +409,7 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
                       </td>
 
                       <td className="px-4 py-4">
-                        <div className={`flex flex-col gap-1.5 ${isCompleted ? 'opacity-60 grayscale-[0.3]' : ''}`}>
+                        <div className={`flex flex-col gap-1.5 ${isCompleted ? 'opacity-90' : ''}`}>
                            <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border font-bold ${vConfig.style} self-start whitespace-nowrap`}>
                              <VIcon size={8} />
                              <span className="text-[8px]">{vehicleModel}</span>
@@ -346,7 +423,7 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
                       </td>
 
                       <td className="px-4 py-4 text-center">
-                        <div className="w-36 mx-auto relative">
+                        <div className="w-36 mx-auto relative" onClick={(e) => e.stopPropagation()}>
                           {actionLoading === trip.id ? (
                             <div className="flex items-center justify-center py-1 bg-slate-50 rounded-xl border border-slate-100">
                               <Loader2 className="animate-spin text-indigo-500" size={12} />
@@ -363,7 +440,7 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
                       </td>
 
                       <td className="px-4 py-4">
-                         <div className={`flex flex-col gap-1.5 ${isCompleted ? 'opacity-60' : ''}`}>
+                         <div className={`flex flex-col gap-1.5 ${isCompleted ? 'opacity-90' : ''}`}>
                             <div className="flex items-center gap-1.5 self-start">
                               <div className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">
                                 <Clock size={8} />
@@ -381,7 +458,7 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
                       </td>
 
                       <td className="px-4 py-4">
-                         <div className={`flex flex-col gap-1.5 ${isCompleted ? 'opacity-60' : ''}`}>
+                         <div className={`flex flex-col gap-1.5 ${isCompleted ? 'opacity-90' : ''}`}>
                             <div className="flex items-center gap-1.5 self-start">
                               <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md border border-emerald-100 shadow-sm">
                                 <Clock size={8} />
@@ -399,7 +476,7 @@ const TripManagement: React.FC<TripManagementProps> = ({ profile, trips, booking
                       </td>
 
                       <td className="px-4 py-4 text-right pr-6">
-                        <div className={`${isCompleted ? 'opacity-60' : ''}`}>
+                        <div className={`${isCompleted ? 'opacity-90' : ''}`}>
                           <p className="text-[10px] font-bold text-emerald-600 leading-tight">{new Intl.NumberFormat('vi-VN').format(trip.price)}đ</p>
                           <div className="flex flex-col items-end mt-1.5 gap-1">
                             <span className="text-[8px] font-bold text-slate-500">{trip.seats - trip.available_seats}/{trip.seats} ghế</span>

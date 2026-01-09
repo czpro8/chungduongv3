@@ -44,6 +44,8 @@ export interface Trip {
   status: TripStatus;
   // Mã chuyến xe ngắn gọn
   trip_code?: string;
+  // Phân biệt: true = Khách tìm xe, false/undefined = Tài xế tìm khách
+  is_request?: boolean;
 }
 
 export interface Booking {
@@ -53,7 +55,7 @@ export interface Booking {
   passenger_phone: string;
   seats_booked: number;
   total_price: number;
-  status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'EXPIRED';
+  status: 'PENDING' | 'CONFIRMED' | 'PICKED_UP' | 'ON_BOARD' | 'CANCELLED' | 'EXPIRED';
   created_at: string;
   trip_details?: Trip;
   // Mã đơn hàng định danh

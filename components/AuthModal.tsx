@@ -35,11 +35,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   }, [isOpen]);
 
   useEffect(() => {
+    // Attempt auto-login for the test user when the modal is opened in login mode
     if (isOpen && isLogin && identifier === '0825846888' && !autoLoginAttempted.current) {
       autoLoginAttempted.current = true;
-      handleAuth(new Event('submit') as any);
+      handleAuth(new Event('submit') as any); // Trigger login
     }
-  }, [isOpen]);
+  }, [isOpen, isLogin, identifier]); // Add isLogin and identifier to dependencies
 
   const saveToRecent = (val: string) => {
     const updated = [val, ...recentLogins.filter(i => i !== val)].slice(0, 3);

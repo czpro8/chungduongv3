@@ -1,21 +1,23 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  LayoutDashboard, Search, PlusCircle, Ticket, Bell, LogOut, Car, LogIn, Settings, ClipboardList, ShoppingBag, Users as UsersIcon, User, X, ChevronUp, MoreHorizontal, Shield, HelpCircle, CheckCircle2, AlertCircle
+  LayoutDashboard, Search, PlusCircle, Ticket, Bell, LogOut, Car, LogIn, Settings, ClipboardList, ShoppingBag, Users as UsersIcon, User, X, ChevronUp, MoreHorizontal, Shield, HelpCircle, CheckCircle2, AlertCircle, Grid, Menu, Plus
 } from 'lucide-react';
 import { Notification, Profile, UserRole } from '../types';
 import { supabase } from '../lib/supabase';
 import UserGuideModal from './UserGuideModal';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: React.ReadNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   notifications: Notification[];
   clearNotification: (id: string) => void;
   profile?: Profile | null;
+  profileLoading: boolean;
   onLoginClick: () => void;
   onProfileClick: () => void;
+  pendingOrderCount?: number; // New prop for badge
 }
 
 const getRoleConfig = (role?: UserRole) => {
@@ -55,10 +57,28 @@ const RoadAnimation = () => {
   );
 };
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, notifications, clearNotification, profile, onLoginClick, onProfileClick }) => {
+const ProfileSkeleton = () => (
+    <div className="bg-gradient-to-br from-slate-50/60 via-white to-slate-50/40 border border-slate-100 p-5 rounded-[32px] space-y-4 shadow-sm animate-pulse">
+        <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-200 shrink-0"></div>
+            <div className="flex-1 space-y-2">
+                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+        </div>
+        <div className="flex gap-3">
+            <div className="flex-1 h-10 bg-slate-200 rounded-2xl"></div>
+            <div className="w-12 h-10 bg-slate-200 rounded-2xl"></div>
+        </div>
+    </div>
+);
+
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, notifications, clearNotification, profile, profileLoading, onLoginClick, onProfileClick, pendingOrderCount = 0 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserGuide, setShowUserGuide] = useState(false);
+  const [showMobileManageMenu, setShowMobileManageMenu] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   
   const isStaff = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'driver';
   const roleConfig = getRoleConfig(profile?.role);
@@ -70,6 +90,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setShowMobileManageMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -83,8 +106,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
 
   const manageItems = [
     { id: 'dashboard', label: 'Thống kê', icon: LayoutDashboard, roles: ['admin', 'manager', 'driver'] },
-    { id: 'manage-trips', label: 'Chuyến xe', icon: ClipboardList, roles: ['admin', 'manager', 'driver'] },
-    { id: 'manage-orders', label: 'Đơn hàng', icon: ShoppingBag, roles: ['admin', 'manager', 'driver'] },
+    { id: 'manage-trips', label: 'Quản lý Chuyến xe', icon: ClipboardList, roles: ['admin', 'manager', 'driver'] },
+    { id: 'manage-orders', label: 'Quản lý Đặt vé', icon: ShoppingBag, roles: ['admin', 'manager', 'driver'] },
     { id: 'admin', label: 'Hệ thống', icon: Shield, roles: ['admin'] },
   ];
 
@@ -99,10 +122,34 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
   const ActiveIcon = activeItem?.icon || Car;
   const activeLabel = activeItem?.label || 'Chung đường';
 
+  const MobileNavItem = ({ id, icon: Icon, label, onClick, isActive, isMain = false, hasBadge = false }: any) => (
+    <button 
+      type="button" 
+      onClick={onClick} 
+      className={`flex flex-col items-center justify-center gap-1 transition-all duration-300 relative ${isMain ? '-mt-8' : ''} ${isActive ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+    >
+      {isMain ? (
+        <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 border-4 border-[#F8FAFC] transition-transform active:scale-95 ${isActive ? 'bg-emerald-700 text-white' : 'bg-emerald-600 text-white'}`}>
+          <Icon size={28} />
+        </div>
+      ) : (
+        <>
+          <div className={`p-1.5 rounded-xl transition-colors relative ${isActive ? 'bg-emerald-50' : 'bg-transparent'}`}>
+            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+            {hasBadge && (
+              <div className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border border-white"></div>
+            )}
+          </div>
+          <span className={`text-[9px] font-bold ${isActive ? 'text-emerald-700' : 'text-slate-400'}`}>{label}</span>
+        </>
+      )}
+    </button>
+  );
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden flex-col lg:flex-row">
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-slate-100 p-8 shrink-0">
+      <aside className="hidden lg:flex flex-col w-72 bg-gradient-to-b from-emerald-50/80 to-indigo-50/60 border-r border-slate-100 p-8 shrink-0">
         <div className="flex items-center gap-3 mb-10 px-2">
           <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-100">
             <Car className="text-white w-5 h-5" />
@@ -136,12 +183,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
+                  className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative ${
                     activeTab === item.id ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
                 >
                   <item.icon size={18} className={activeTab === item.id ? 'text-emerald-600' : 'text-slate-500 group-hover:text-emerald-600'} />
                   <span className="text-sm">{item.label}</span>
+                  {item.id === 'manage-orders' && pendingOrderCount > 0 && (
+                    <span className="absolute right-4 bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm shadow-rose-200">
+                      {pendingOrderCount}
+                    </span>
+                  )}
                 </button>
               ))}
               <button
@@ -159,8 +211,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
         </nav>
 
         <div className="mt-auto pt-6">
-          {profile ? (
-            <div className="bg-white/50 border border-slate-100 p-5 rounded-[32px] space-y-4 shadow-sm">
+          {profileLoading ? (
+            <ProfileSkeleton />
+          ) : profile ? (
+            <div className="bg-gradient-to-br from-emerald-50/80 to-indigo-50/60 border border-emerald-100 p-5 rounded-[32px] space-y-4 shadow-sm backdrop-blur-sm">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-emerald-600 font-bold text-lg shadow-md border border-slate-100 shrink-0">
                   {profile.full_name?.charAt(0) || 'U'}
@@ -182,14 +236,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
               </div>
             </div>
           ) : (
-            <button type="button" onClick={onLoginClick} className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-[24px] font-bold text-sm shadow-xl hover:bg-emerald-600 transition-all"><LogIn size={18} />Đăng nhập</button>
+            <button type="button" onClick={onLoginClick} className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-[24px] font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-px transition-all transform">
+              <LogIn size={18} />Đăng nhập
+            </button>
           )}
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
+        <header className="h-20 bg-gradient-to-r from-emerald-50/80 via-white/90 to-indigo-50/80 backdrop-blur-md border-b border-emerald-100/50 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <div className="lg:hidden bg-emerald-600 p-2 rounded-xl shadow-lg shadow-emerald-100">
               <Car className="text-white w-4 h-4" />
@@ -208,7 +264,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
             <button 
               type="button" 
               onClick={() => setShowUserGuide(true)}
-              className="p-2 sm:p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all"
+              className="p-2 sm:p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-white rounded-xl transition-all"
               title="Hướng dẫn sử dụng"
             >
               <HelpCircle size={20} />
@@ -217,7 +273,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
               <button 
                 type="button" 
                 onClick={() => setShowNotifications(!showNotifications)} 
-                className="p-2 sm:p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition-all relative"
+                className="p-2 sm:p-2.5 text-slate-500 hover:text-emerald-600 hover:bg-white rounded-xl transition-all relative"
               >
                 <Bell size={20} className={unreadCount > 0 ? 'animate-bell text-rose-500' : ''} />
                 {unreadCount > 0 && (
@@ -269,30 +325,86 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10 pb-28 lg:pb-10 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-32 lg:pb-10 custom-scrollbar">
           {children}
         </div>
 
-        {/* Bottom Navigation Mobile */}
-        <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[70]">
-          <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[32px] px-2 py-2 flex items-center justify-around">
-            <button type="button" onClick={() => setActiveTab('search')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-500'}`}>
-              <Search size={22} className={activeTab === 'search' ? 'scale-110' : ''} />
-              <span className="text-[10px] font-bold">Tìm kiếm</span>
-            </button>
-            <button type="button" onClick={() => setActiveTab('bookings')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'bookings' ? 'text-emerald-600' : 'text-slate-500'}`}>
-              <Ticket size={22} className={activeTab === 'bookings' ? 'scale-110' : ''} />
-              <span className="text-[10px] font-bold">Lịch sử</span>
-            </button>
-            {isStaff && (
-              <button type="button" onClick={() => setActiveTab('post')} className="flex flex-col items-center justify-center h-16 w-16 bg-emerald-600 text-white rounded-[24px] shadow-lg shadow-emerald-100 -translate-y-4 scale-110 active:scale-95 transition-all">
-                <PlusCircle size={26} />
-              </button>
+        {/* Mobile Navigation - Redesigned Floating Dock */}
+        <nav className="lg:hidden fixed bottom-5 left-4 right-4 z-[70] flex justify-center" ref={mobileMenuRef}>
+          {/* Management Popover Menu */}
+          {showMobileManageMenu && isStaff && (
+            <div className="absolute bottom-full right-0 mb-4 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 flex flex-col gap-1 animate-in slide-in-from-bottom-2 fade-in duration-200 origin-bottom-right">
+              {manageItems.filter(item => item.roles.includes(profile?.role || '')).map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id); setShowMobileManageMenu(false); }}
+                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all relative ${isActive ? 'bg-emerald-50 text-emerald-600' : 'hover:bg-slate-50 text-slate-600'}`}
+                  >
+                    <item.icon size={18} className={isActive ? 'text-emerald-600' : 'text-slate-400'} />
+                    <span className="text-xs font-bold">{item.label}</span>
+                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-600"></div>}
+                    {item.id === 'manage-orders' && pendingOrderCount > 0 && (
+                      <span className="ml-auto bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        {pendingOrderCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-[28px] px-3 py-2 flex items-center justify-between gap-1 w-full max-w-[420px] relative">
+            <MobileNavItem 
+              id="search" 
+              icon={Search} 
+              label="Tìm kiếm" 
+              isActive={activeTab === 'search'} 
+              onClick={() => setActiveTab('search')} 
+            />
+            
+            <MobileNavItem 
+              id="bookings" 
+              icon={Ticket} 
+              label="Lịch sử" 
+              isActive={activeTab === 'bookings'} 
+              onClick={() => setActiveTab('bookings')} 
+            />
+
+            {/* Central Main Button */}
+            {isStaff ? (
+              <MobileNavItem 
+                id="post" 
+                icon={Plus} 
+                label="" 
+                isMain={true} 
+                isActive={activeTab === 'post'} 
+                onClick={() => setActiveTab('post')} 
+              />
+            ) : (
+              <div className="w-8"></div> /* Spacer for symmetry if needed, or remove for 3 items layout */
             )}
-            <button type="button" onClick={onProfileClick} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'profile' ? 'text-emerald-600' : 'text-slate-500'}`}>
-              <User size={22} className={activeTab === 'profile' ? 'scale-110' : ''} />
-              <span className="text-[10px] font-bold">Hồ sơ</span>
-            </button>
+
+            {isStaff && (
+              <MobileNavItem 
+                id="manage" 
+                icon={Grid} 
+                label="Quản lý" 
+                hasBadge={pendingOrderCount > 0}
+                isActive={manageItems.some(i => i.id === activeTab)} 
+                onClick={() => setShowMobileManageMenu(!showMobileManageMenu)} 
+              />
+            )}
+
+            <MobileNavItem 
+              id="profile" 
+              icon={User} 
+              label="Hồ sơ" 
+              isActive={activeTab === 'profile'} 
+              onClick={onProfileClick} 
+            />
           </div>
         </nav>
       </main>
